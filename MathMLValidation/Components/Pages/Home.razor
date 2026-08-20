@@ -1,0 +1,346 @@
+﻿@page "/"
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+<PageTitle>Blazor MathML validation</PageTitle>
+
+<header class="validation-header">
+	<p class="eyebrow">ASP.NET Core issue #68541</p>
+	<h1>Blazor MathML namespace validation</h1>
+	<p>
+		Seven rendering paths exercise static, updated, nested, conditional, component,
+		and runtime-provided MathML in an Interactive Server component with prerendering.
+	</p>
+</header>
+
+<section class="validation-result @(namespaceReport?.Passed == true && namespaceReport.StaticFormulaUnchanged && validationError is null ? "validation-result--pass" : namespaceReport is null && validationError is null ? "" : "validation-result--fail")"
+		 role="status"
+		 aria-live="polite">
+	<div>
+		<span class="result-label">Namespace check</span>
+		@if (validationError is not null)
+		{
+			<strong>Check failed</strong>
+			<span>@validationError</span>
+		}
+		else if (namespaceReport is null)
+		{
+			<strong>Waiting for the interactive renderer</strong>
+		}
+		else if (namespaceReport.Passed && namespaceReport.StaticFormulaUnchanged)
+		{
+			<strong>Pass</strong>
+			<span>@namespaceReport.ElementCount elements across @namespaceReport.FormulaCount visible formulas use the MathML namespace.</span>
+		}
+		else
+		{
+			<strong>Fail</strong>
+			@if (!namespaceReport.StaticFormulaUnchanged)
+			{
+				<span>The static control changed after interaction.</span>
+			}
+			else
+			{
+				<span>@namespaceReport.Failures.Length namespace mismatch(es) found.</span>
+			}
+		}
+	</div>
+	<button type="button" class="check-action" @onclick="ValidateNamespacesAsync">
+		Run namespace check
+	</button>
+</section>
+
+@if (namespaceReport is { Failures.Length: > 0 })
+{
+	<ul class="namespace-failures" aria-label="Namespace failures">
+		@foreach (var failure in namespaceReport.Failures)
+		{
+			<li>Case @failure.CaseNumber: &lt;@failure.ElementName&gt; uses <code>@failure.ActualNamespace</code></li>
+		}
+	</ul>
+}
+
+<div class="formula-grid" role="region" aria-label="MathML validation cases" @ref="formulaGrid">
+	<section class="formula-case" data-case="1">
+		<div class="case-heading">
+			<span class="case-number">01</span>
+			<div>
+				<h2>Static control</h2>
+				<p>Entirely static and unchanged throughout.</p>
+			</div>
+		</div>
+		<div class="formula-stage">
+			<math display="block" aria-label="a squared plus b squared equals c squared">
+				<mrow>
+					<msup><mi>a</mi><mn>2</mn></msup>
+					<mo>+</mo>
+					<msup><mi>b</mi><mn>2</mn></msup>
+					<mo>=</mo>
+					<msup><mi>c</mi><mn>2</mn></msup>
+				</mrow>
+			</math>
+		</div>
+	</section>
+
+	<section class="formula-case" data-case="2">
+		<div class="case-heading">
+			<span class="case-number">02</span>
+			<div>
+				<h2>Updating attribute</h2>
+				<p>A 2 x 2 matrix whose inline style changes.</p>
+			</div>
+		</div>
+		<div class="formula-stage">
+			<math display="block"
+				  aria-label="two by two matrix"
+				  style="@(dark ? "background: black; color: white" : "")">
+				<mrow>
+					<mo>[</mo>
+					<mtable>
+						<mtr>
+							<mtd><mi>a</mi></mtd>
+							<mtd><mi>b</mi></mtd>
+						</mtr>
+						<mtr>
+							<mtd><mi>c</mi></mtd>
+							<mtd><mi>d</mi></mtd>
+						</mtr>
+					</mtable>
+					<mo>]</mo>
+				</mrow>
+			</math>
+		</div>
+		<button type="button" class="case-action" @onclick="ToggleDark">
+			@(dark ? "Use light style" : "Use dark style")
+		</button>
+	</section>
+
+	<section class="formula-case" data-case="3">
+		<div class="case-heading">
+			<span class="case-number">03</span>
+			<div>
+				<h2>Updating content</h2>
+				<p>The numeric child changes after every click.</p>
+			</div>
+		</div>
+		<div class="formula-stage">
+			<math display="block" aria-label="x equals @value">
+				<mrow>
+					<mi>x</mi>
+					<mo>=</mo>
+					<mn>@value</mn>
+				</mrow>
+			</math>
+		</div>
+		<button type="button" class="case-action" @onclick="IncrementValue">
+			Increment value
+		</button>
+	</section>
+
+	<section class="formula-case" data-case="4">
+		<div class="case-heading">
+			<span class="case-number">04</span>
+			<div>
+				<h2>Child component</h2>
+				<p>The MathML parent contains a component that renders an mrow.</p>
+			</div>
+		</div>
+		<div class="formula-stage">
+			<math display="block" aria-label="y squared equals open parenthesis x plus one close parenthesis squared">
+				<MathRowFormula />
+			</math>
+		</div>
+	</section>
+
+	<section class="formula-case" data-case="5">
+		<div class="case-heading">
+			<span class="case-number">05</span>
+			<div>
+				<h2>Conditional formula</h2>
+				<p>The entire MathML tree is removed and recreated.</p>
+			</div>
+		</div>
+		<div class="formula-stage">
+			@if (showConditional)
+			{
+				<math display="block" aria-label="e to the power of i pi plus one equals zero">
+					<mrow>
+						<msup>
+							<mi>e</mi>
+							<mrow><mi>i</mi><mi>&pi;</mi></mrow>
+						</msup>
+						<mo>+</mo>
+						<mn>1</mn>
+						<mo>=</mo>
+						<mn>0</mn>
+					</mrow>
+				</math>
+			}
+			else
+			{
+				<span class="formula-placeholder">Formula removed</span>
+			}
+		</div>
+		<button type="button" class="case-action" @onclick="ToggleConditional">
+			@(showConditional ? "Hide formula" : "Show formula")
+		</button>
+	</section>
+
+	<section class="formula-case" data-case="6">
+		<div class="case-heading">
+			<span class="case-number">06</span>
+			<div>
+				<h2>Nested structure</h2>
+				<p>A stacked fraction and square root make layout failures visible.</p>
+			</div>
+		</div>
+		<div class="formula-stage formula-stage--large">
+			<math display="block" aria-label="quadratic formula">
+				<mrow>
+					<mi>x</mi>
+					<mo>=</mo>
+					<mfrac>
+						<mrow>
+							<mo>-</mo>
+							<mi>b</mi>
+							<mo>&#x00B1;</mo>
+							<msqrt>
+								<mrow>
+									<msup><mi>b</mi><mn>2</mn></msup>
+									<mo>-</mo>
+									<mn>4</mn><mi>a</mi><mi>c</mi>
+								</mrow>
+							</msqrt>
+						</mrow>
+						<mrow><mn>2</mn><mi>a</mi></mrow>
+					</mfrac>
+				</mrow>
+			</math>
+		</div>
+	</section>
+
+	<section class="formula-case" data-case="7">
+		<div class="case-heading">
+			<span class="case-number">07</span>
+			<div>
+				<h2>Runtime MarkupString</h2>
+				<p>The MathML children arrive as markup at runtime.</p>
+			</div>
+		</div>
+		<div class="formula-stage">
+			<math display="block" aria-label="the integral from zero to one of x squared d x equals one third">
+				@((MarkupString)runtimeMathMarkup)
+			</math>
+		</div>
+	</section>
+</div>
+
+@code {
+	private const string runtimeMathMarkup = "<mrow><msubsup><mo>&#x222B;</mo><mn>0</mn><mn>1</mn></msubsup><msup><mi>x</mi><mn>2</mn></msup><mi>d</mi><mi>x</mi><mo>=</mo><mfrac><mn>1</mn><mn>3</mn></mfrac></mrow>";
+
+	private bool dark;
+	private bool showConditional = true;
+	private int value = 1;
+	private bool validationPending;
+	private ElementReference formulaGrid;
+	private IJSObjectReference? module;
+	private NamespaceReport? namespaceReport;
+	private string? validationError;
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			try
+			{
+				module = await JS.InvokeAsync<IJSObjectReference>("import", "./mathml-validation.js");
+				await ValidateNamespacesAsync();
+			}
+			catch (JSException exception)
+			{
+				validationError = exception.Message;
+			}
+
+			StateHasChanged();
+		}
+		else if (validationPending)
+		{
+			validationPending = false;
+			await ValidateNamespacesAsync();
+			StateHasChanged();
+		}
+	}
+
+	private void ToggleDark()
+	{
+		dark = !dark;
+		validationPending = true;
+	}
+
+	private void IncrementValue()
+	{
+		value++;
+		validationPending = true;
+	}
+
+	private void ToggleConditional()
+	{
+		showConditional = !showConditional;
+		validationPending = true;
+	}
+
+	private async Task ValidateNamespacesAsync()
+	{
+		if (module is null)
+		{
+			return;
+		}
+
+		try
+		{
+			namespaceReport = await module.InvokeAsync<NamespaceReport>("inspect", formulaGrid);
+			validationError = null;
+		}
+		catch (JSException exception)
+		{
+			validationError = exception.Message;
+		}
+	}
+
+	public async ValueTask DisposeAsync()
+	{
+		if (module is not null)
+		{
+			try
+			{
+				await module.DisposeAsync();
+			}
+			catch (JSDisconnectedException)
+			{
+			}
+		}
+	}
+
+	private sealed class NamespaceReport
+	{
+		public bool Passed { get; set; }
+
+		public int FormulaCount { get; set; }
+
+		public int ElementCount { get; set; }
+
+		public bool StaticFormulaUnchanged { get; set; }
+
+		public NamespaceFailure[] Failures { get; set; } = [];
+	}
+
+	private sealed class NamespaceFailure
+	{
+		public string CaseNumber { get; set; } = string.Empty;
+
+		public string ElementName { get; set; } = string.Empty;
+
+		public string ActualNamespace { get; set; } = string.Empty;
+	}
+}

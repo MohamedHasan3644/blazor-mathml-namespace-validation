@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Plain HTML MathML reference</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { background: #f4f7f5; color: #1d2926; font-family: Candara, "Trebuchet MS", sans-serif; letter-spacing: 0; margin: 0; }
+        main { margin: 0 auto; max-width: 920px; padding: 3rem 1.25rem 5rem; }
+        header { border-bottom: 3px solid #d49b24; margin-bottom: 1.5rem; padding-bottom: 1.5rem; }
+        h1, h2 { color: #17352f; font-family: Constantia, Georgia, serif; }
+        h1 { font-size: 2.2rem; margin: 0; }
+        header p { color: #52615d; line-height: 1.5; margin: 0.75rem 0 0; }
+        section { align-items: center; background: #fff; border-bottom: 1px solid #cbd4cf; display: grid; gap: 1rem; grid-template-columns: minmax(13rem, 1fr) 2fr; min-height: 8rem; padding: 1rem; }
+        section:first-of-type { border-top: 1px solid #cbd4cf; }
+        h2 { font-size: 1rem; margin: 0; }
+        math { font-size: 1.65rem; justify-self: center; padding: 0.45rem; }
+        @media (max-width: 600px) { section { grid-template-columns: 1fr; } math { justify-self: start; } }
+    </style>
+</head>
+<body>
+    <main>
+        <header>
+            <h1>Plain HTML MathML reference</h1>
+            <p>The browser's HTML parser creates these elements directly in the MathML namespace. Compare their layout, font, italics, fraction bars, and radical overbars with the interactive Blazor page.</p>
+        </header>
+
+        <section>
+            <h2>01 Static control</h2>
+            <math display="block" aria-label="a squared plus b squared equals c squared">
+                <mrow>
+                    <msup><mi>a</mi><mn>2</mn></msup>
+                    <mo>+</mo>
+                    <msup><mi>b</mi><mn>2</mn></msup>
+                    <mo>=</mo>
+                    <msup><mi>c</mi><mn>2</mn></msup>
+                </mrow>
+            </math>
+        </section>
+
+        <section>
+            <h2>02 Updating attribute</h2>
+            <math display="block" aria-label="two by two matrix">
+                <mrow>
+                    <mo>[</mo>
+                    <mtable>
+                        <mtr><mtd><mi>a</mi></mtd><mtd><mi>b</mi></mtd></mtr>
+                        <mtr><mtd><mi>c</mi></mtd><mtd><mi>d</mi></mtd></mtr>
+                    </mtable>
+                    <mo>]</mo>
+                </mrow>
+            </math>
+        </section>
+
+        <section>
+            <h2>03 Updating content</h2>
+            <math display="block" aria-label="x equals 1">
+                <mrow><mi>x</mi><mo>=</mo><mn>1</mn></mrow>
+            </math>
+        </section>
+
+        <section>
+            <h2>04 Child component output</h2>
+            <math display="block" aria-label="y squared equals open parenthesis x plus one close parenthesis squared">
+                <mrow>
+                    <msup><mi>y</mi><mn>2</mn></msup>
+                    <mo>=</mo>
+                    <msup>
+                        <mrow><mo>(</mo><mi>x</mi><mo>+</mo><mn>1</mn><mo>)</mo></mrow>
+                        <mn>2</mn>
+                    </msup>
+                </mrow>
+            </math>
+        </section>
+
+        <section>
+            <h2>05 Conditional formula</h2>
+            <math display="block" aria-label="e to the power of i pi plus one equals zero">
+                <mrow>
+                    <msup><mi>e</mi><mrow><mi>i</mi><mi>&pi;</mi></mrow></msup>
+                    <mo>+</mo><mn>1</mn><mo>=</mo><mn>0</mn>
+                </mrow>
+            </math>
+        </section>
+
+        <section>
+            <h2>06 Nested quadratic formula</h2>
+            <math display="block" aria-label="quadratic formula">
+                <mrow>
+                    <mi>x</mi><mo>=</mo>
+                    <mfrac>
+                        <mrow>
+                            <mo>-</mo><mi>b</mi><mo>&#x00B1;</mo>
+                            <msqrt>
+                                <mrow><msup><mi>b</mi><mn>2</mn></msup><mo>-</mo><mn>4</mn><mi>a</mi><mi>c</mi></mrow>
+                            </msqrt>
+                        </mrow>
+                        <mrow><mn>2</mn><mi>a</mi></mrow>
+                    </mfrac>
+                </mrow>
+            </math>
+        </section>
+
+        <section>
+            <h2>07 Runtime markup output</h2>
+            <math display="block" aria-label="the integral from zero to one of x squared d x equals one third">
+                <mrow><msubsup><mo>&#x222B;</mo><mn>0</mn><mn>1</mn></msubsup><msup><mi>x</mi><mn>2</mn></msup><mi>d</mi><mi>x</mi><mo>=</mo><mfrac><mn>1</mn><mn>3</mn></mfrac></mrow>
+            </math>
+        </section>
+    </main>
+</body>
+</html>
